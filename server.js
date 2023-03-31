@@ -1,12 +1,13 @@
 const express = require("express");
 const app = express();
+const { Configuration, OpenAIApi } = require("openai");
+
 const client = require("./database.js");
 const port = 4000 || process.env.PORT;
 const http = require("http");
 const cors = require("cors");
 const serviceAccount = require("./gym-auth-development-firebase-adminsdk-lzm2x-34721cf03e.json");
 const admin = require("firebase-admin");
-
 const { Server } = require("socket.io");
 const server = http.createServer(app);
 
@@ -254,6 +255,34 @@ app.get("/all_users", async (req, res) => {
     });
   } catch (e) {
     res.status(500).send({ message: e });
+  }
+});
+
+const openai = new OpenAIApi(
+  new Configuration({
+    apiKey: process.env.CHAT_GPT_API_KEY,
+  })
+);
+
+app.post("/exercise_recommendation", (req, res) => {
+  try {
+    const message = req.body;
+    let AI_mess = "";
+    openai
+      .createChatCompletion({
+        model: "gpt-3.5-turbo",
+        messages: [{ role: "user", content: message.text }],
+      })
+      .then((response) => {
+        res.send(response.data.choices);
+      })
+      .catch((error) => {
+        console.log(error);
+        res.status(500).send("Error generating exercise recommendation.");
+      });
+  } catch (error) {
+    console.log(error);
+    res.status(400).send("Invalid request body.");
   }
 });
 
